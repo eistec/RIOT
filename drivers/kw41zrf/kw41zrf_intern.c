@@ -214,24 +214,24 @@ void kw41zrf_abort_rx_ops_disable(kw41zrf_t *dev)
 void kw41zrf_seq_timeout_on(kw41zrf_t *dev, uint32_t timeout)
 {
 //     kw41zrf_mask_irqs();
-    kw41zrf_timer_set(dev, &ZLL->T4CMP, timeout);
+    kw41zrf_timer_set(dev, &ZLL->T3CMP, timeout);
 
     /* enable and clear irq for timer 4 */
-    kw41zrf_clear_irq_flags(ZLL_IRQSTS_TMR4IRQ_MASK);
-    ZLL->IRQSTS = (ZLL->IRQSTS & (
-        ZLL_IRQSTS_TMR1MSK_MASK | ZLL_IRQSTS_TMR2MSK_MASK |
-        ZLL_IRQSTS_TMR3MSK_MASK)); /* Clear TMR4MSK bit */
+//     kw41zrf_clear_irq_flags(ZLL_IRQSTS_TMR4IRQ_MASK);
+//     ZLL->IRQSTS = (ZLL->IRQSTS & (
+//         ZLL_IRQSTS_TMR1MSK_MASK | ZLL_IRQSTS_TMR2MSK_MASK |
+//         ZLL_IRQSTS_TMR4MSK_MASK)); /* Clear TMR3MSK bit */
 
     /* Enable T4 Compare */
-    bit_set32(&ZLL->PHY_CTRL, ZLL_PHY_CTRL_TMR4CMP_EN_SHIFT);
+    bit_set32(&ZLL->PHY_CTRL, ZLL_PHY_CTRL_TMR3CMP_EN_SHIFT);
 //     kw41zrf_unmask_irqs();
 }
 
 void kw41zrf_seq_timeout_off(kw41zrf_t *dev)
 {
-    /* Disable T4 Compare */
-    bit_clear32(&ZLL->PHY_CTRL, ZLL_PHY_CTRL_TMR4CMP_EN_SHIFT);
-    kw41zrf_clear_irq_flags(ZLL_IRQSTS_TMR4IRQ_MASK);
+    /* Disable TMR3 */
+    bit_clear32(&ZLL->PHY_CTRL, ZLL_PHY_CTRL_TMR3CMP_EN_SHIFT);
+//     kw41zrf_clear_irq_flags(ZLL_IRQSTS_TMR3IRQ_MASK);
     DEBUG("[kw41zrf] seq_timeout_off, now: %" PRIx32 "\n", kw41zrf_timer_get(dev));
 }
 
