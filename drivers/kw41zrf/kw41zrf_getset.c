@@ -85,6 +85,8 @@ inline void kw41zrf_abort_sequence(kw41zrf_t *dev)
 {
     /* Writing IDLE to XCVSEQ aborts any ongoing sequence */
     ZLL->PHY_CTRL = (ZLL->PHY_CTRL & ~ZLL_PHY_CTRL_XCVSEQ_MASK) >> ZLL_PHY_CTRL_XCVSEQ(XCVSEQ_IDLE);
+    /* Clear interrupt flags */
+    ZLL->IRQSTS = ZLL->IRQSTS;
 }
 
 void kw41zrf_set_sequence(kw41zrf_t *dev, uint8_t seq)

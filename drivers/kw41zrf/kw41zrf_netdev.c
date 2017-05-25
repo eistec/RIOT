@@ -21,6 +21,7 @@
 #include <errno.h>
 
 #include "log.h"
+#include "od.h"
 #include "net/eui64.h"
 #include "net/ieee802154.h"
 #include "net/netdev.h"
@@ -42,6 +43,7 @@
 #define KW41ZRF_PER_BYTE_TIME          2
 #define KW41ZRF_ACK_WAIT_TIME         54
 
+// static uint8_t rx_buf[128];
 
 #define _MACACKWAITDURATION         (864 / 16) /* 864us * 62500Hz */
 
@@ -87,7 +89,7 @@ static inline size_t kw41zrf_tx_load(const void *buf, size_t len, size_t offset)
 static void kw41zrf_tx_exec(kw41zrf_t *dev)
 {
     uint16_t len_fcf = ZLL->PKT_BUFFER_TX[0];
-    DEBUG("[kw41zrf] len_fcf=0x%08x\n", len_fcf);
+    DEBUG("[kw41zrf] len_fcf=0x%04x\n", len_fcf);
     /* Check FCF field in the TX buffer to see if the ACK_REQ flag was set in
      * the packet that is queued for transmission */
     uint8_t fcf = (len_fcf >> 8) & 0xff;
@@ -142,6 +144,10 @@ static int kw41zrf_netdev_send(netdev_t *netdev, const struct iovec *vector, uns
      * MKW41Z ref. man. 44.6.2.6.3.1.3 Sequence T (Transmit), p. 2147
      */
     *((volatile uint8_t *)&ZLL->PKT_BUFFER_TX[0]) = len + IEEE802154_FCS_LEN;
+#if defined(MODULE_OD) && ENABLE_DEBUG
+    DEBUG("[kw41zrf] send:\n");
+    od_hex_dump((const uint8_t *)ZLL->PKT_BUFFER_TX, len, OD_WIDTH_DEFAULT);
+#endif
 
 #ifdef MODULE_NETSTATS_L2
     netdev->stats.tx_bytes += len;
@@ -157,13 +163,22 @@ static int kw41zrf_netdev_send(netdev_t *netdev, const struct iovec *vector, uns
 
 static int kw41zrf_netdev_recv(netdev_t *netdev, void *buf, size_t len, void *info)
 {
+    DEBUG("[kw41zrf] buf[0]: %04x\n", ZLL->PKT_BUFFER_RX[0]);
+
     /* get size of the received packet */
-    size_t pkt_len = (ZLL->IRQSTS & ZLL_IRQSTS_RX_FRAME_LENGTH_MASK) >> ZLL_IRQSTS_RX_FRAME_LENGTH_SHIFT;
+    uint8_t pkt_len = (ZLL->IRQSTS & ZLL_IRQSTS_RX_FRAME_LENGTH_MASK) >> ZLL_IRQSTS_RX_FRAME_LENGTH_SHIFT;
+//     uint8_t pkt_len = ZLL->PKT_BUFFER_RX[0] & 0xff;
 
     /* just return length when buf == NULL */
     if (buf == NULL) {
         return pkt_len;
     }
+
+//     DEBUG("[kw41zrf] buf len: %3u\n", (unsigned int)pkt_len);
+#if defined(MODULE_OD) && ENABLE_DEBUG
+    DEBUG("[kw41zrf] recv:\n");
+    od_hex_dump((const uint8_t *)ZLL->PKT_BUFFER_RX, pkt_len, OD_WIDTH_DEFAULT);
+#endif
 
 #ifdef MODULE_NETSTATS_L2
     netdev->stats.rx_count++;
@@ -177,13 +192,12 @@ static int kw41zrf_netdev_recv(netdev_t *netdev, void *buf, size_t len, void *in
         return -ENOBUFS;
     }
 
-    /* Copy the packet, skip the frame length byte */
-    memcpy((uint8_t *)buf, ((uint8_t*)&ZLL->PKT_BUFFER_RX[0]) + 1, pkt_len);
+    DEBUG("[kw41zrf] Copy buffer\n");
+    memcpy(buf, (void *)&ZLL->PKT_BUFFER_RX[0], pkt_len);
 
     if (info != NULL) {
         netdev_ieee802154_rx_info_t *radio_info = info;
-        uint8_t hw_lqi =
-            (ZLL->LQI_AND_RSSI & ZLL_LQI_AND_RSSI_LQI_VALUE_MASK) >>
+        uint8_t hw_lqi = (ZLL->LQI_AND_RSSI & ZLL_LQI_AND_RSSI_LQI_VALUE_MASK) >>
             ZLL_LQI_AND_RSSI_LQI_VALUE_SHIFT;
         if (hw_lqi >= 220) {
             radio_info->lqi = 255;
@@ -573,6 +587,9 @@ static uint32_t _isr_event_seq_r(kw41zrf_t *dev, uint32_t irqsts)
     if (irqsts & ZLL_IRQSTS_RXIRQ_MASK) {
         DEBUG("[kw41zrf] finished RX\n");
         handled_irqs |= ZLL_IRQSTS_RXIRQ_MASK;
+        size_t pkt_len = (ZLL->IRQSTS & ZLL_IRQSTS_RX_FRAME_LENGTH_MASK) >> ZLL_IRQSTS_RX_FRAME_LENGTH_SHIFT;
+        DEBUG("[kw41zrf] RX len: %3u\n", (unsigned int)pkt_len);
+//         memcpy(&rx_buf[0], &ZLL->PKT_BUFFER_RX[0], pkt_len);
         if (ZLL->PHY_CTRL & ZLL_PHY_CTRL_AUTOACK_MASK) {
             DEBUG("[kw41zrf] perform TXACK\n");
         }
@@ -598,7 +615,7 @@ static uint32_t _isr_event_seq_r(kw41zrf_t *dev, uint32_t irqsts)
         }
         else {
             /* No error reported */
-            DEBUG("[kw41zrf] TX success (R)\n");
+            DEBUG("[kw41zrf] success (R)\n");
             if (dev->netdev.flags & KW41ZRF_OPT_TELL_RX_END) {
                 dev->netdev.netdev.event_callback(&dev->netdev.netdev, NETDEV_EVENT_RX_COMPLETE);
             }
