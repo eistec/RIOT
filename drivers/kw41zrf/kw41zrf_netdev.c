@@ -163,11 +163,11 @@ static int kw41zrf_netdev_send(netdev_t *netdev, const struct iovec *vector, uns
 
 static int kw41zrf_netdev_recv(netdev_t *netdev, void *buf, size_t len, void *info)
 {
-    DEBUG("[kw41zrf] buf[0]: %04x\n", ZLL->PKT_BUFFER_RX[0]);
-
     /* get size of the received packet */
     uint8_t pkt_len = (ZLL->IRQSTS & ZLL_IRQSTS_RX_FRAME_LENGTH_MASK) >> ZLL_IRQSTS_RX_FRAME_LENGTH_SHIFT;
+    pkt_len -= IEEE802154_FCS_LEN;
 //     uint8_t pkt_len = ZLL->PKT_BUFFER_RX[0] & 0xff;
+    DEBUG("[kw41zrf] RX %u bytes\n", pkt_len);
 
     /* just return length when buf == NULL */
     if (buf == NULL) {
@@ -191,8 +191,6 @@ static int kw41zrf_netdev_recv(netdev_t *netdev, void *buf, size_t len, void *in
         /* not enough space in buf */
         return -ENOBUFS;
     }
-
-    DEBUG("[kw41zrf] Copy buffer\n");
     memcpy(buf, (void *)&ZLL->PKT_BUFFER_RX[0], pkt_len);
 
     if (info != NULL) {
