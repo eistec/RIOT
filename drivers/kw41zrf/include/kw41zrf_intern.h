@@ -193,7 +193,7 @@ void kw41zrf_abort_rx_ops_enable(kw41zrf_t *dev, uint32_t timeout);
  * @param[in] dev       kw41zrf device descriptor
  */
 void kw41zrf_abort_rx_ops_disable(kw41zrf_t *dev);
-
+#if 0
 /**
  * @brief   Enable sequence timeout
  *
@@ -208,7 +208,7 @@ void kw41zrf_seq_timeout_on(kw41zrf_t *dev, uint32_t timeout);
  * @param[in] dev       kw41zrf device descriptor
  */
 void kw41zrf_seq_timeout_off(kw41zrf_t *dev);
-
+#endif
 /**
  * @brief   Returns Timestamp of the actual received packet
  *

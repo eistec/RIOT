@@ -75,6 +75,9 @@ static int kw41zrf_netdev_init(netdev_t *netdev)
     /* reset device to default values and put it into RX state */
     kw41zrf_reset_phy(dev);
 
+    /* Use TC3 for RX timeouts */
+    kw41zrf_timer3_seq_abort_on(dev);
+
     return 0;
 }
 
@@ -97,11 +100,11 @@ static void kw41zrf_tx_exec(kw41zrf_t *dev)
         (fcf & IEEE802154_FCF_ACK_REQ)) {
         uint8_t payload_len = len_fcf & 0xff;
         uint32_t tx_timeout = dev->tx_warmup_time + KW41ZRF_SHR_PHY_TIME +
-            payload_len * KW41ZRF_PER_BYTE_TIME;
+            payload_len * KW41ZRF_PER_BYTE_TIME + KW41ZRF_ACK_WAIT_TIME;
         DEBUG("[kw41zrf] Start TR\n");
         kw41zrf_set_sequence(dev, XCVSEQ_TX_RX);
-        tx_timeout += KW41ZRF_ACK_WAIT_TIME;
-        kw41zrf_seq_timeout_on(dev, tx_timeout);
+        /* Set timeout for RX ACK */
+        kw41zrf_abort_rx_ops_enable(dev, tx_timeout);
     }
     else {
         DEBUG("[kw41zrf] Start T\n");
@@ -676,7 +679,6 @@ static uint32_t _isr_event_seq_tr(kw41zrf_t *dev, uint32_t irqsts)
         handled_irqs |= ZLL_IRQSTS_TXIRQ_MASK;
         if (ZLL->PHY_CTRL & ZLL_PHY_CTRL_RXACKRQD_MASK) {
             DEBUG("[kw41zrf] wait for RX ACK\n");
-            kw41zrf_seq_timeout_on(dev, _MACACKWAITDURATION);
         }
     }
 
@@ -718,7 +720,7 @@ static uint32_t _isr_event_seq_tr(kw41zrf_t *dev, uint32_t irqsts)
         }
         assert(dev->pending_tx != 0);
         dev->pending_tx--;
-        kw41zrf_seq_timeout_off(dev);
+        kw41zrf_abort_rx_ops_disable(dev);
         kw41zrf_set_sequence(dev, dev->idle_state);
     }
 
@@ -737,7 +739,7 @@ static uint32_t _isr_event_seq_ccca(kw41zrf_t *dev, uint32_t irqsts)
         else {
             DEBUG("[kw41zrf] CCCA ch idle\n");
         }
-        kw41zrf_seq_timeout_off(dev);
+        kw41zrf_abort_rx_ops_disable(dev);
         kw41zrf_set_sequence(dev, dev->idle_state);
     }
 

@@ -146,7 +146,7 @@ static inline void kw41zrf_timer_load(kw41zrf_t *dev, uint32_t value)
 static inline uint32_t kw41zrf_timer_get(kw41zrf_t *dev)
 {
     (void) dev;
-    return (ZLL->EVENT_TMR & ZLL_EVENT_TMR_EVENT_TMR_LD_MASK) >> ZLL_EVENT_TMR_EVENT_TMR_SHIFT;
+    return (ZLL->EVENT_TMR & ZLL_EVENT_TMR_EVENT_TMR_MASK) >> ZLL_EVENT_TMR_EVENT_TMR_SHIFT;
 }
 
 /** Set an timeout value for the given compare register of the Event Timer */
@@ -210,7 +210,7 @@ void kw41zrf_abort_rx_ops_disable(kw41zrf_t *dev)
     kw41zrf_clear_irq_flags(ZLL_IRQSTS_TMR3IRQ_MASK);
     DEBUG("[kw41zrf] abort_rx_ops_disable, now: %" PRIx32 "\n", kw41zrf_timer_get(dev));
 }
-
+#if 0
 void kw41zrf_seq_timeout_on(kw41zrf_t *dev, uint32_t timeout)
 {
 //     kw41zrf_mask_irqs();
@@ -234,7 +234,7 @@ void kw41zrf_seq_timeout_off(kw41zrf_t *dev)
 //     kw41zrf_clear_irq_flags(ZLL_IRQSTS_TMR3IRQ_MASK);
     DEBUG("[kw41zrf] seq_timeout_off, now: %" PRIx32 "\n", kw41zrf_timer_get(dev));
 }
-
+#endif
 uint32_t kw41zrf_get_timestamp(kw41zrf_t *dev)
 {
     return ZLL->TIMESTAMP;
