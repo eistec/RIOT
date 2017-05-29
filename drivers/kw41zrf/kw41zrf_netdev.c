@@ -32,7 +32,7 @@
 #include "kw41zrf_intern.h"
 #include "kw41zrf_getset.h"
 
-#define ENABLE_DEBUG (1)
+#define ENABLE_DEBUG (0)
 #include "debug.h"
 
 #define _MAX_MHR_OVERHEAD           (25)
@@ -42,10 +42,6 @@
 #define KW41ZRF_SHR_PHY_TIME          12
 #define KW41ZRF_PER_BYTE_TIME          2
 #define KW41ZRF_ACK_WAIT_TIME         54
-
-// static uint8_t rx_buf[128];
-
-#define _MACACKWAITDURATION         (864 / 16) /* 864us * 62500Hz */
 
 static void kw41zrf_irq_handler(void *arg)
 {
@@ -231,7 +227,7 @@ static int kw41zrf_netdev_set_state(kw41zrf_t *dev, netopt_state_t state)
             kw41zrf_reset_phy(dev);
             break;
         case NETOPT_STATE_OFF:
-            /* TODO: Replace with powerdown (set reset input low) */
+            /* TODO implement DSM */
 //             kw41zrf_set_power_mode(dev, KW41ZRF_HIBERNATE);
         default:
             return -ENOTSUP;
@@ -588,9 +584,9 @@ static uint32_t _isr_event_seq_r(kw41zrf_t *dev, uint32_t irqsts)
     if (irqsts & ZLL_IRQSTS_RXIRQ_MASK) {
         DEBUG("[kw41zrf] finished RX\n");
         handled_irqs |= ZLL_IRQSTS_RXIRQ_MASK;
-        size_t pkt_len = (ZLL->IRQSTS & ZLL_IRQSTS_RX_FRAME_LENGTH_MASK) >> ZLL_IRQSTS_RX_FRAME_LENGTH_SHIFT;
-        DEBUG("[kw41zrf] RX len: %3u\n", (unsigned int)pkt_len);
-//         memcpy(&rx_buf[0], &ZLL->PKT_BUFFER_RX[0], pkt_len);
+        DEBUG("[kw41zrf] RX len: %3u\n",
+            (unsigned int)((ZLL->IRQSTS & ZLL_IRQSTS_RX_FRAME_LENGTH_MASK) >>
+            ZLL_IRQSTS_RX_FRAME_LENGTH_SHIFT));
         if (ZLL->PHY_CTRL & ZLL_PHY_CTRL_AUTOACK_MASK) {
             DEBUG("[kw41zrf] perform TXACK\n");
         }
@@ -701,6 +697,8 @@ static uint32_t _isr_event_seq_tr(kw41zrf_t *dev, uint32_t irqsts)
             if (seq_ctrl_sts & ZLL_SEQ_CTRL_STS_TC3_ABORTED_MASK) {
                 DEBUG("[kw41zrf] RXACK timeout (TR)\n");
                 dev->netdev.netdev.event_callback(&dev->netdev.netdev, NETDEV_EVENT_TX_NOACK);
+                /* Clear TMR3 IRQ flag */
+                handled_irqs |= ZLL_IRQSTS_TMR3IRQ_MASK;
             }
             else if (seq_ctrl_sts & ZLL_SEQ_CTRL_STS_PLL_ABORTED_MASK) {
                 DEBUG("[kw41zrf] PLL unlock (TR)\n");
@@ -807,7 +805,7 @@ static void kw41zrf_netdev_isr(netdev_t *netdev)
 //         DEBUG("[kw41zrf] FILTERFAILIRQ: %04"PRIx32"\n", ZLL->FILTERFAIL_CODE);
 //         handled_irqs |= ZLL_IRQSTS_FILTERFAIL_IRQ_MASK;
 //     }
-    kw41zrf_clear_irq_flags(handled_irqs);
+//     kw41zrf_clear_irq_flags(handled_irqs);
     irqsts &= ~handled_irqs;
 
     if (irqsts & 0x000f017f) {

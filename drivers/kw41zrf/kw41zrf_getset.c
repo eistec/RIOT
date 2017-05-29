@@ -23,7 +23,7 @@
 #include "kw41zrf_intern.h"
 #include "kw41zrf_getset.h"
 
-#define ENABLE_DEBUG (1)
+#define ENABLE_DEBUG (0)
 #include "debug.h"
 
 #define KW41ZRF_NUM_CHANNEL      (KW41ZRF_MAX_CHANNEL - KW41ZRF_MIN_CHANNEL + 1)
@@ -84,7 +84,7 @@ int kw41zrf_set_channel(kw41zrf_t *dev, uint8_t channel)
 inline void kw41zrf_abort_sequence(kw41zrf_t *dev)
 {
     /* Writing IDLE to XCVSEQ aborts any ongoing sequence */
-    ZLL->PHY_CTRL = (ZLL->PHY_CTRL & ~ZLL_PHY_CTRL_XCVSEQ_MASK) >> ZLL_PHY_CTRL_XCVSEQ(XCVSEQ_IDLE);
+    ZLL->PHY_CTRL = (ZLL->PHY_CTRL & ~ZLL_PHY_CTRL_XCVSEQ_MASK) | ZLL_PHY_CTRL_XCVSEQ(XCVSEQ_IDLE);
     /* Clear interrupt flags */
     ZLL->IRQSTS = ZLL->IRQSTS;
 }
