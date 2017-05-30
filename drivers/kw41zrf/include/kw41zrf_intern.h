@@ -28,13 +28,11 @@ extern "C" {
 #endif
 
 /**
- * @brief   Power Modes
+ * @brief   KW41Z transceiver power modes
  */
 typedef enum {
-    KW2XRF_HIBERNATE = 0,
-    KW2XRF_DOZE,
-    KW2XRF_IDLE,
-    KW2XRF_AUTODOZE,
+    KW41ZRF_POWER_IDLE = 0, /**< All parts powered */
+    KW41ZRF_POWER_DSM, /**< Deep sleep mode */
 } kw41zrf_powermode_t;
 
 /**
@@ -70,19 +68,6 @@ static inline void kw41zrf_unmask_irqs(void)
 }
 
 /**
- * @brief   Clear only the specified IRQ flags in the IRQSTS register
- */
-static inline void kw41zrf_clear_irq_flags(uint32_t mask)
-{
-    /* Clear all handled IRQ flags, careful to avoid touching the timer masks */
-    /* write 1 to clear the IRQ flags */
-    ZLL->IRQSTS = (ZLL->IRQSTS & (
-        ZLL_IRQSTS_TMR1MSK_MASK | ZLL_IRQSTS_TMR2MSK_MASK |
-        ZLL_IRQSTS_TMR3MSK_MASK | ZLL_IRQSTS_TMR4MSK_MASK)) |
-        mask;
-}
-
-/**
  * @brief   Set the callback function for the radio ISR
  *
  * This callback will be called from ISR context when a radio_1 interrupt occurs
@@ -98,13 +83,6 @@ void kw41zrf_set_irq_callback(void (*cb)(void *arg), void *arg);
  * @param[in] dev       kw41zrf device descriptor
  */
 void kw41zrf_disable_interrupts(kw41zrf_t *dev);
-
-/**
- * @brief
- *
- * @param[in] dev       kw41zrf device descriptor
- */
-void kw41zrf_set_out_clk(kw41zrf_t *dev);
 
 /**
  * @brief   Set power mode for device
@@ -193,22 +171,7 @@ void kw41zrf_abort_rx_ops_enable(kw41zrf_t *dev, uint32_t timeout);
  * @param[in] dev       kw41zrf device descriptor
  */
 void kw41zrf_abort_rx_ops_disable(kw41zrf_t *dev);
-#if 0
-/**
- * @brief   Enable sequence timeout
- *
- * @param[in] dev       kw41zrf device descriptor
- * @param[in] timeout   timeout value
- */
-void kw41zrf_seq_timeout_on(kw41zrf_t *dev, uint32_t timeout);
 
-/**
- * @brief   Disable sequence timeout
- *
- * @param[in] dev       kw41zrf device descriptor
- */
-void kw41zrf_seq_timeout_off(kw41zrf_t *dev);
-#endif
 /**
  * @brief   Returns Timestamp of the actual received packet
  *

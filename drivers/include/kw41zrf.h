@@ -114,15 +114,9 @@ typedef struct {
      */
     uint32_t tx_warmup_time;    /**< TX warmup time, in event timer ticks */
     uint32_t rx_warmup_time;    /**< RX warmup time, in event timer ticks */
-    uint32_t irq_flags;         /**< IRQ flags, used internally to determine
-                                     which events to pass to the network stack */
     int16_t tx_power;           /**< The current tx-power setting of the device */
     uint8_t state;              /**< current state of the radio */
-    uint8_t tx_frame_len;       /**< length of the current TX frame */
     uint8_t idle_state;         /**< state to return to after sending */
-    uint8_t pending_tx;         /**< keep track of pending TX calls, this is
-                                     required to know when to return to
-                                     @ref kw41zrf_t::idle_state */
     /** @} */
 } kw41zrf_t;
 

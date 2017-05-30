@@ -243,12 +243,10 @@ void kw41zrf_set_option(kw41zrf_t *dev, uint16_t option, bool state)
 
             case KW41ZRF_OPT_TELL_RX_END:
                 LOG_DEBUG("[kw41zrf] enable: TELL_RX_END\n");
-//                 bit_clear32(&ZLL->PHY_CTRL, ZLL_PHY_CTRL_RXMSK_SHIFT);
                 break;
 
             case KW41ZRF_OPT_TELL_TX_END:
                 LOG_DEBUG("[kw41zrf] enable: TELL_TX_END\n");
-//                 bit_clear32(&ZLL->PHY_CTRL, ZLL_PHY_CTRL_TXMSK_SHIFT);
                 break;
 
             case KW41ZRF_OPT_TELL_TX_START:
@@ -290,12 +288,10 @@ void kw41zrf_set_option(kw41zrf_t *dev, uint16_t option, bool state)
 
             case KW41ZRF_OPT_TELL_RX_END:
                 LOG_DEBUG("[kw41zrf] disable: TELL_RX_END\n");
-//                 bit_set32(&ZLL->PHY_CTRL, ZLL_PHY_CTRL_RXMSK_SHIFT);
                 break;
 
             case KW41ZRF_OPT_TELL_TX_END:
                 LOG_DEBUG("[kw41zrf] disable: TELL_TX_END\n");
-//                 bit_set32(&ZLL->PHY_CTRL, ZLL_PHY_CTRL_TXMSK_SHIFT);
                 break;
 
             case KW41ZRF_OPT_TELL_TX_START:

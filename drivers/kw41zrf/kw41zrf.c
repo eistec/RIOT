@@ -72,8 +72,7 @@ void kw41zrf_setup(kw41zrf_t *dev)
     /* initialize device descriptor */
     dev->idle_state = XCVSEQ_RECEIVE;
     dev->state = 0;
-    dev->pending_tx = 0;
-//     kw41zrf_set_power_mode(dev, KW41ZRF_IDLE);
+//     kw41zrf_set_power_mode(dev, KW41ZRF_POWER_IDLE);
     DEBUG("[kw41zrf] setup finished\n");
 }
 
@@ -106,9 +105,7 @@ int kw41zrf_init(kw41zrf_t *dev, gpio_cb_t cb)
     /* Configre Radio IRQ */
     kw41zrf_set_irq_callback(cb, dev);
     NVIC_ClearPendingIRQ(Radio_1_IRQn);
-    NVIC_ClearPendingIRQ(Radio_0_IRQn);
     NVIC_EnableIRQ(Radio_1_IRQn);
-    NVIC_EnableIRQ(Radio_0_IRQn);
 
     kw41zrf_abort_sequence(dev);
     kw41zrf_unmask_irqs();
@@ -188,7 +185,7 @@ void kw41zrf_reset_phy(kw41zrf_t *dev)
     kw41zrf_set_option(dev, KW41ZRF_OPT_ACK_REQ, true);
     kw41zrf_set_option(dev, KW41ZRF_OPT_AUTOCCA, true);
 
-//     kw41zrf_set_power_mode(dev, KW41ZRF_AUTODOZE);
+    kw41zrf_set_power_mode(dev, KW41ZRF_POWER_IDLE);
     kw41zrf_set_sequence(dev, dev->idle_state);
 
     kw41zrf_set_option(dev, KW41ZRF_OPT_TELL_RX_START, true);

@@ -73,38 +73,23 @@ void kw41zrf_disable_interrupts(kw41zrf_t *dev)
         ZLL_IRQSTS_TXIRQ_MASK |
         ZLL_IRQSTS_SEQIRQ_MASK;
 }
-#if 0
+
 void kw41zrf_set_power_mode(kw41zrf_t *dev, kw41zrf_powermode_t pm)
 {
-    DEBUG("[kw41zrf] set power mode to %d\n", pm);
-    uint8_t reg = 0;
+    DEBUG("[kw41zrf] set power mode to %u\n", pm);
+    /* TODO handle event timer */
     switch (pm) {
-        case KW41ZRF_HIBERNATE:
-            /* VREG off, XTAL off, Timer off, Current cons. < 1uA */
-            reg = 0;
-            dev->state = NETOPT_STATE_SLEEP;
+        case KW41ZRF_POWER_IDLE:
+            bit_clear32(&ZLL->DSM_CTRL, ZLL_DSM_CTRL_ZIGBEE_SLEEP_EN_SHIFT);
             break;
-
-        case KW2XRF_DOZE:
-            /* VREG off, XTAL on, Timer on/off, Current cons. 600uA */
-            reg = MKW2XDM_PWR_MODES_XTALEN;
-            dev->state = NETOPT_STATE_SLEEP;
+        case KW41ZRF_POWER_DSM:
+            bit_set32(&ZLL->DSM_CTRL, ZLL_DSM_CTRL_ZIGBEE_SLEEP_EN_SHIFT);
             break;
-
-        case KW2XRF_IDLE:
-            /* VREG on, XTAL on, Timer on, Current cons. 700uA */
-            reg = MKW2XDM_PWR_MODES_XTALEN | MKW2XDM_PWR_MODES_PMC_MODE;
-            dev->state = NETOPT_STATE_IDLE;
-            break;
-
-        case KW2XRF_AUTODOZE:
-            reg = MKW2XDM_PWR_MODES_XTALEN | MKW2XDM_PWR_MODES_AUTODOZE;
-            dev->state = NETOPT_STATE_IDLE;
-            break;
+        default:
+            DEBUG("[kw41zrf] Unknown power mode %u\n", pm);
+            return;
     }
-    kw41zrf_write_dreg(dev, MKW2XDM_PWR_MODES, reg);
 }
-#endif
 
 int kw41zrf_can_switch_to_idle(kw41zrf_t *dev)
 {
@@ -149,7 +134,7 @@ static inline uint32_t kw41zrf_timer_get(kw41zrf_t *dev)
     return (ZLL->EVENT_TMR & ZLL_EVENT_TMR_EVENT_TMR_MASK) >> ZLL_EVENT_TMR_EVENT_TMR_SHIFT;
 }
 
-/** Set an timeout value for the given compare register of the Event Timer */
+/** Set a timeout value for the given compare register of the Event Timer */
 static inline void kw41zrf_timer_set(kw41zrf_t *dev, volatile uint32_t *cmp_reg, uint32_t timeout)
 {
     uint32_t now = kw41zrf_timer_get(dev);
@@ -194,7 +179,6 @@ void kw41zrf_trigger_tx_ops_enable(kw41zrf_t *dev, uint32_t timeout)
 void kw41zrf_trigger_tx_ops_disable(kw41zrf_t *dev)
 {
     bit_clear32(&ZLL->PHY_CTRL, ZLL_PHY_CTRL_TMR2CMP_EN_SHIFT);
-//     kw41zrf_clear_irq_flags(ZLL_IRQSTS_TMR2IRQ_MASK);
     DEBUG("[kw41zrf] trigger_tx_ops_disable, now: %" PRIx32 "\n", kw41zrf_timer_get(dev));
 }
 
@@ -207,46 +191,12 @@ void kw41zrf_abort_rx_ops_enable(kw41zrf_t *dev, uint32_t timeout)
 void kw41zrf_abort_rx_ops_disable(kw41zrf_t *dev)
 {
     bit_clear32(&ZLL->PHY_CTRL, ZLL_PHY_CTRL_TMR3CMP_EN_SHIFT);
-//     kw41zrf_clear_irq_flags(ZLL_IRQSTS_TMR3IRQ_MASK);
     DEBUG("[kw41zrf] abort_rx_ops_disable, now: %" PRIx32 "\n", kw41zrf_timer_get(dev));
 }
-#if 0
-void kw41zrf_seq_timeout_on(kw41zrf_t *dev, uint32_t timeout)
-{
-//     kw41zrf_mask_irqs();
-    kw41zrf_timer_set(dev, &ZLL->T3CMP, timeout);
 
-    /* enable and clear irq for timer 4 */
-//     kw41zrf_clear_irq_flags(ZLL_IRQSTS_TMR4IRQ_MASK);
-//     ZLL->IRQSTS = (ZLL->IRQSTS & (
-//         ZLL_IRQSTS_TMR1MSK_MASK | ZLL_IRQSTS_TMR2MSK_MASK |
-//         ZLL_IRQSTS_TMR4MSK_MASK)); /* Clear TMR3MSK bit */
-
-    /* Enable T4 Compare */
-    bit_set32(&ZLL->PHY_CTRL, ZLL_PHY_CTRL_TMR3CMP_EN_SHIFT);
-//     kw41zrf_unmask_irqs();
-}
-
-void kw41zrf_seq_timeout_off(kw41zrf_t *dev)
-{
-    /* Disable TMR3 */
-    bit_clear32(&ZLL->PHY_CTRL, ZLL_PHY_CTRL_TMR3CMP_EN_SHIFT);
-//     kw41zrf_clear_irq_flags(ZLL_IRQSTS_TMR3IRQ_MASK);
-    DEBUG("[kw41zrf] seq_timeout_off, now: %" PRIx32 "\n", kw41zrf_timer_get(dev));
-}
-#endif
 uint32_t kw41zrf_get_timestamp(kw41zrf_t *dev)
 {
     return ZLL->TIMESTAMP;
-}
-
-void isr_radio_int0(void)
-{
-    DEBUG("[kw41zrf] INT0\n");
-    if (isr_config.cb != NULL) {
-        isr_config.cb(isr_config.arg);
-    }
-    cortexm_isr_end();
 }
 
 void isr_radio_int1(void)

@@ -135,7 +135,6 @@ static int kw41zrf_netdev_send(netdev_t *netdev, const struct iovec *vector, uns
     kw41zrf_set_sequence(dev, XCVSEQ_IDLE);
 
     DEBUG("[kw41zrf] TX %u bytes\n", len);
-    dev->pending_tx++;
 
     /*
      * First octet in the TX buffer contains the frame length.
@@ -166,7 +165,6 @@ static int kw41zrf_netdev_recv(netdev_t *netdev, void *buf, size_t len, void *in
     uint8_t pkt_len = (ZLL->IRQSTS & ZLL_IRQSTS_RX_FRAME_LENGTH_MASK) >> ZLL_IRQSTS_RX_FRAME_LENGTH_SHIFT;
     /* skip FCS */
     pkt_len -= IEEE802154_FCS_LEN;
-//     uint8_t pkt_len = ZLL->PKT_BUFFER_RX[0] & 0xff;
     DEBUG("[kw41zrf] RX %u bytes\n", pkt_len);
 
     /* just return length when buf == NULL */
@@ -211,11 +209,12 @@ static int kw41zrf_netdev_recv(netdev_t *netdev, void *buf, size_t len, void *in
 static int kw41zrf_netdev_set_state(kw41zrf_t *dev, netopt_state_t state)
 {
     switch (state) {
+        case NETOPT_STATE_OFF:
         case NETOPT_STATE_SLEEP:
-//             kw41zrf_set_power_mode(dev, KW41ZRF_DOZE);
+            kw41zrf_set_power_mode(dev, KW41ZRF_POWER_DSM);
             break;
         case NETOPT_STATE_IDLE:
-//             kw41zrf_set_power_mode(dev, KW41ZRF_AUTODOZE);
+            kw41zrf_set_power_mode(dev, KW41ZRF_POWER_IDLE);
             kw41zrf_set_sequence(dev, dev->idle_state);
             break;
         case NETOPT_STATE_TX:
@@ -226,9 +225,6 @@ static int kw41zrf_netdev_set_state(kw41zrf_t *dev, netopt_state_t state)
         case NETOPT_STATE_RESET:
             kw41zrf_reset_phy(dev);
             break;
-        case NETOPT_STATE_OFF:
-            /* TODO implement DSM */
-//             kw41zrf_set_power_mode(dev, KW41ZRF_HIBERNATE);
         default:
             return -ENOTSUP;
     }
@@ -642,8 +638,6 @@ static uint32_t _isr_event_seq_t(kw41zrf_t *dev, uint32_t irqsts)
         if (dev->netdev.flags & KW41ZRF_OPT_TELL_TX_END) {
             dev->netdev.netdev.event_callback(&dev->netdev.netdev, NETDEV_EVENT_TX_COMPLETE);
         }
-        assert(dev->pending_tx != 0);
-        dev->pending_tx--;
         /* Go back to being idle */
         kw41zrf_set_sequence(dev, dev->idle_state);
     }
@@ -721,8 +715,6 @@ static uint32_t _isr_event_seq_tr(kw41zrf_t *dev, uint32_t irqsts)
                 dev->netdev.netdev.event_callback(&dev->netdev.netdev, NETDEV_EVENT_TX_COMPLETE);
             }
         }
-        assert(dev->pending_tx != 0);
-        dev->pending_tx--;
         kw41zrf_abort_rx_ops_disable(dev);
         kw41zrf_set_sequence(dev, dev->idle_state);
     }
@@ -794,20 +786,6 @@ static void kw41zrf_netdev_isr(netdev_t *netdev)
             DEBUG("[kw41zrf] undefined seq state in isr\n");
             break;
     }
-
-//     if (irqsts & ZLL_IRQSTS_PLL_UNLOCK_IRQ_MASK) {
-//         DEBUG("[kw41zrf] untreated PLL_UNLOCK_IRQ\n");
-//         handled_irqs |= ZLL_IRQSTS_PLL_UNLOCK_IRQ_MASK;
-//     }
-//     if (irqsts & ZLL_IRQSTS_WAKE_IRQ_MASK) {
-//         DEBUG("[kw41zrf] untreated WAKE_IRQ\n");
-//         handled_irqs |= ZLL_IRQSTS_WAKE_IRQ_MASK;
-//     }
-//     if (irqsts & ZLL_IRQSTS_FILTERFAIL_IRQ_MASK) {
-//         DEBUG("[kw41zrf] FILTERFAILIRQ: %04"PRIx32"\n", ZLL->FILTERFAIL_CODE);
-//         handled_irqs |= ZLL_IRQSTS_FILTERFAIL_IRQ_MASK;
-//     }
-//     kw41zrf_clear_irq_flags(handled_irqs);
 
     /* Clear all IRQ flags now */
     ZLL->IRQSTS = irqsts;
