@@ -19,6 +19,7 @@
 #include <errno.h>
 #include "log.h"
 #include "cpu.h"
+#include "byteorder.h"
 #include "kw41zrf.h"
 #include "kw41zrf_intern.h"
 #include "kw41zrf_getset.h"
@@ -117,6 +118,8 @@ void kw41zrf_set_sequence(kw41zrf_t *dev, uint8_t seq)
 
     DEBUG("[kw41zrf] set sequence to %u\n", (unsigned int)seq);
     ZLL->PHY_CTRL = (ZLL->PHY_CTRL & ~ZLL_PHY_CTRL_XCVSEQ_MASK) | ZLL_PHY_CTRL_XCVSEQ(seq);
+    /* clear all IRQ flags */
+    ZLL->IRQSTS = ZLL->IRQSTS;
 }
 
 void kw41zrf_set_pan(kw41zrf_t *dev, uint16_t pan)
@@ -148,12 +151,13 @@ void kw41zrf_set_addr_short(kw41zrf_t *dev, uint16_t addr)
 void kw41zrf_set_addr_long(kw41zrf_t *dev, uint64_t addr)
 {
     (void) dev;
-    ZLL->MACLONGADDRS0_LSB = (uint32_t)addr;
-    ZLL->MACLONGADDRS0_MSB = (addr >> 32);
-
     for (unsigned i = 0; i < IEEE802154_LONG_ADDRESS_LEN; i++) {
         dev->netdev.long_addr[i] = (uint8_t)(addr >> (i * 8));
     }
+    /* Network byte order */
+    addr = byteorder_swapll(addr);
+    ZLL->MACLONGADDRS0_LSB = (uint32_t)addr;
+    ZLL->MACLONGADDRS0_MSB = (addr >> 32);
 }
 
 uint16_t kw41zrf_get_addr_short(kw41zrf_t *dev)
@@ -167,6 +171,8 @@ uint64_t kw41zrf_get_addr_long(kw41zrf_t *dev)
 {
     (void) dev;
     uint64_t addr = ((uint64_t)ZLL->MACLONGADDRS0_MSB << 32) | ZLL->MACLONGADDRS0_LSB;
+    /* Network byte order */
+    addr = byteorder_swapll(addr);
 
     return addr;
 }

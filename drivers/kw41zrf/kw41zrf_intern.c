@@ -194,7 +194,7 @@ void kw41zrf_trigger_tx_ops_enable(kw41zrf_t *dev, uint32_t timeout)
 void kw41zrf_trigger_tx_ops_disable(kw41zrf_t *dev)
 {
     bit_clear32(&ZLL->PHY_CTRL, ZLL_PHY_CTRL_TMR2CMP_EN_SHIFT);
-    kw41zrf_clear_irq_flags(ZLL_IRQSTS_TMR2IRQ_MASK);
+//     kw41zrf_clear_irq_flags(ZLL_IRQSTS_TMR2IRQ_MASK);
     DEBUG("[kw41zrf] trigger_tx_ops_disable, now: %" PRIx32 "\n", kw41zrf_timer_get(dev));
 }
 
@@ -207,7 +207,7 @@ void kw41zrf_abort_rx_ops_enable(kw41zrf_t *dev, uint32_t timeout)
 void kw41zrf_abort_rx_ops_disable(kw41zrf_t *dev)
 {
     bit_clear32(&ZLL->PHY_CTRL, ZLL_PHY_CTRL_TMR3CMP_EN_SHIFT);
-    kw41zrf_clear_irq_flags(ZLL_IRQSTS_TMR3IRQ_MASK);
+//     kw41zrf_clear_irq_flags(ZLL_IRQSTS_TMR3IRQ_MASK);
     DEBUG("[kw41zrf] abort_rx_ops_disable, now: %" PRIx32 "\n", kw41zrf_timer_get(dev));
 }
 #if 0

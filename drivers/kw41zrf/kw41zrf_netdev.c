@@ -164,6 +164,7 @@ static int kw41zrf_netdev_recv(netdev_t *netdev, void *buf, size_t len, void *in
 {
     /* get size of the received packet */
     uint8_t pkt_len = (ZLL->IRQSTS & ZLL_IRQSTS_RX_FRAME_LENGTH_MASK) >> ZLL_IRQSTS_RX_FRAME_LENGTH_SHIFT;
+    /* skip FCS */
     pkt_len -= IEEE802154_FCS_LEN;
 //     uint8_t pkt_len = ZLL->PKT_BUFFER_RX[0] & 0xff;
     DEBUG("[kw41zrf] RX %u bytes\n", pkt_len);
@@ -190,7 +191,7 @@ static int kw41zrf_netdev_recv(netdev_t *netdev, void *buf, size_t len, void *in
         /* not enough space in buf */
         return -ENOBUFS;
     }
-    memcpy(buf, (void *)&ZLL->PKT_BUFFER_RX[0], pkt_len);
+    memcpy(buf, (const void *)&ZLL->PKT_BUFFER_RX[0], pkt_len);
 
     if (info != NULL) {
         netdev_ieee802154_rx_info_t *radio_info = info;
@@ -204,8 +205,7 @@ static int kw41zrf_netdev_recv(netdev_t *netdev, void *buf, size_t len, void *in
         radio_info->rssi = (ZLL->LQI_AND_RSSI & ZLL_LQI_AND_RSSI_RSSI_MASK) >> ZLL_LQI_AND_RSSI_RSSI_SHIFT;
     }
 
-    /* skip PHR and FCS */
-    return pkt_len - 2;
+    return pkt_len;
 }
 
 static int kw41zrf_netdev_set_state(kw41zrf_t *dev, netopt_state_t state)
@@ -581,6 +581,11 @@ static uint32_t _isr_event_seq_r(kw41zrf_t *dev, uint32_t irqsts)
         }
     }
 
+    if (irqsts & ZLL_IRQSTS_FILTERFAIL_IRQ_MASK) {
+        DEBUG("[kw41zrf] FILTERFAILIRQ: %04"PRIx32"\n", ZLL->FILTERFAIL_CODE);
+        handled_irqs |= ZLL_IRQSTS_FILTERFAIL_IRQ_MASK;
+    }
+
     if (irqsts & ZLL_IRQSTS_RXIRQ_MASK) {
         DEBUG("[kw41zrf] finished RX\n");
         handled_irqs |= ZLL_IRQSTS_RXIRQ_MASK;
@@ -749,11 +754,8 @@ static void kw41zrf_netdev_isr(netdev_t *netdev)
     kw41zrf_t *dev = (kw41zrf_t *)netdev;
     uint32_t irqsts = ZLL->IRQSTS;
     uint32_t handled_irqs = 0;
-    /* Clear all IRQ flags now */
-    ZLL->IRQSTS = irqsts;
-
-    DEBUG("[kw41zrf] CTRL %08" PRIx32 ", IRQSTS %08" PRIx32 "\n",
-          ZLL->PHY_CTRL, irqsts);
+    DEBUG("[kw41zrf] CTRL %08" PRIx32 ", IRQSTS %08" PRIx32 ", FILTERFAIL %08" PRIx32 "\n",
+          ZLL->PHY_CTRL, irqsts, ZLL->FILTERFAIL_CODE);
 
     uint8_t seq = (ZLL->PHY_CTRL & ZLL_PHY_CTRL_XCVSEQ_MASK) >> ZLL_PHY_CTRL_XCVSEQ_SHIFT;
 
@@ -806,6 +808,10 @@ static void kw41zrf_netdev_isr(netdev_t *netdev)
 //         handled_irqs |= ZLL_IRQSTS_FILTERFAIL_IRQ_MASK;
 //     }
 //     kw41zrf_clear_irq_flags(handled_irqs);
+
+    /* Clear all IRQ flags now */
+    ZLL->IRQSTS = irqsts;
+
     irqsts &= ~handled_irqs;
 
     if (irqsts & 0x000f017f) {
