@@ -28,6 +28,7 @@
 #include "mutex.h"
 #include "periph/adc.h"
 
+
 /**
  * @brief   Maximum clock speed
  *
@@ -205,6 +206,8 @@ int adc_init(adc_t line)
     done(line);
     return res;
 }
+
+
 
 int adc_sample(adc_t line, adc_res_t res)
 {

@@ -38,6 +38,14 @@
 #include "net/gnrc.h"
 #endif
 
+/*
+const shell_command_t shell_commands[] = {
+                      {"adc_dma_init", "Initialize the ADC", adc_dma_init},
+                      {"adc_sample", "Single sample ADC", adc_sample},
+                      {"adc_read", "Read adc", adc_read},
+                      {null, null, null}};
+*/
+
 int main(void)
 {
 #ifdef FEATURE_PERIPH_RTC
@@ -52,8 +60,10 @@ int main(void)
 
     (void) puts("Welcome to RIOT!");
 
-    char line_buf[SHELL_DEFAULT_BUFSIZE];
-    shell_run(NULL, line_buf, SHELL_DEFAULT_BUFSIZE);
+    printf("This application runs on %s\n", RIOT_BOARD);
+
+    //char line_buf[SHELL_DEFAULT_BUFSIZE];
+    //shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
 
     return 0;
 }
