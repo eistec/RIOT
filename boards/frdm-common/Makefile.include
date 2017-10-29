@@ -13,27 +13,29 @@ export DEBUG_ADAPTER ?= dap
 # Set this to 0 to avoid the extra manual step of disabling the watchdog.
 export USE_OLD_OPENOCD ?= 1
 
+FRDM_COMMON_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+
 ifeq (1,$(USE_OLD_OPENOCD))
-# We need special handling of the watchdog if we want to speed up the flash
-# verification by using the MCU to compute the image checksum after flashing.
-# wdog-disable.bin is a precompiled binary which will disable the watchdog and
-# return control to the debugger (OpenOCD)
-export OPENOCD_PRE_VERIFY_CMDS += \
-  -c 'load_image $(RIOTCPU)/$(CPU)/dist/wdog-disable.bin 0x20000000 bin' \
-  -c 'resume 0x20000000'
-export OPENOCD_EXTRA_INIT
+  # We need special handling of the watchdog if we want to speed up the flash
+  # verification by using the MCU to compute the image checksum after flashing.
+  # wdog-disable.bin is a precompiled binary which will disable the watchdog and
+  # return control to the debugger (OpenOCD)
+  export OPENOCD_PRE_VERIFY_CMDS += \
+    -c 'load_image $(RIOTCPU)/$(CPU)/dist/wdog-disable.bin 0x20000000 bin' \
+    -c 'resume 0x20000000'
+  export OPENOCD_EXTRA_INIT
 
-.PHONY: flash
-flash: $(RIOTCPU)/$(CPU)/dist/wdog-disable.bin
+  .PHONY: flash
+  flash: $(RIOTCPU)/$(CPU)/dist/wdog-disable.bin
 
-# Reset the default goal.
-.DEFAULT_GOAL :=
+  # Reset the default goal.
+  .DEFAULT_GOAL :=
 
-export OPENOCD_CONFIG ?= $(RIOTBOARD)/frdm-common/dist/old-openocd-$(CPU_FAMILY).cfg
+  export OPENOCD_CONFIG ?= $(FRDM_COMMON_DIR)/dist/old-openocd-$(CPU_FAMILY).cfg
 endif
 
 # Configuration for OpenOCD v0.10.0 and newer
-export OPENOCD_CONFIG ?= $(RIOTBOARD)/frdm-common/dist/openocd-$(CPU_FAMILY).cfg
+export OPENOCD_CONFIG ?= $(FRDM_COMMON_DIR)/dist/openocd-$(CPU_FAMILY).cfg
 
 # Check the flash configuration field before flashing
 export PRE_FLASH_CHECK_SCRIPT = $(RIOTCPU)/$(CPU)/dist/check-fcfield-elf.sh
