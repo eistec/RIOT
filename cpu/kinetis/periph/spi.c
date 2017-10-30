@@ -66,6 +66,7 @@ static inline void poweron(spi_t bus)
 
 static inline void poweroff(spi_t bus)
 {
+    return;
     switch((uint32_t)dev(bus)) {
         case (uint32_t)SPI0:
         case (uint32_t)SPI1:
