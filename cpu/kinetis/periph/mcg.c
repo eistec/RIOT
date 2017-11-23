@@ -421,6 +421,9 @@ void kinetis_mcg_init(void)
     /* Set external reference clock divider for the FLL */
     MCG->C1 = (MCG->C1 & ~MCG_C1_FRDIV_MASK) | MCG_C1_FRDIV(clock_config.fll_frdiv);
 
+    /* Let the MCGIRCLK run in STOP modes */
+    bit_set8(&MCG->C1, MCG_C1_IREFSTEN_SHIFT);
+
 #if KINETIS_HAVE_PLL
     /* set ERC divider for the PLL */
     MCG->C5 = (uint8_t)(MCG_C5_PRDIV0(clock_config.pll_prdiv));
