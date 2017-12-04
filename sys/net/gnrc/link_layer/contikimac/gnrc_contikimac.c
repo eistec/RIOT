@@ -364,6 +364,7 @@ static void gnrc_contikimac_tick(contikimac_context_t *ctx)
         }
         if (channel_clear) {
             /* Silence detected */
+            ctx->seen_silence = true;
             /* We have detected an idle channel, expect incoming traffic very soon */
             int res = dev->driver->set(dev, NETOPT_STATE, &state_listen, sizeof(state_listen));
             if (res < 0) {
