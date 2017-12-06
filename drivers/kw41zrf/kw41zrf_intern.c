@@ -205,6 +205,21 @@ void kw41zrf_set_sequence(kw41zrf_t *dev, uint32_t seq)
     ZLL->PHY_CTRL = (ZLL->PHY_CTRL & ~(ZLL_PHY_CTRL_XCVSEQ_MASK | ZLL_PHY_CTRL_SEQMSK_MASK)) | seq;
     while (((ZLL->SEQ_CTRL_STS & ZLL_SEQ_CTRL_STS_XCVSEQ_ACTUAL_MASK) >>
         ZLL_SEQ_CTRL_STS_XCVSEQ_ACTUAL_SHIFT) != (ZLL_PHY_CTRL_XCVSEQ_MASK & seq)) {}
+    if (seq == XCVSEQ_IDLE) {
+        /* switch DCDC to pulsed mode */
+        /* TODO separate DCDC driver with counting semaphore */
+        DCDC->REG3 |= DCDC_REG3_DCDC_VDD1P5CTRL_DISABLE_STEP_MASK |
+            DCDC_REG3_DCDC_VDD1P8CTRL_DISABLE_STEP_MASK;
+        bit_set32(&DCDC->REG0, DCDC_REG0_DCDC_LP_DF_CMP_ENABLE_SHIFT);
+        bit_clear32(&DCDC->REG0, DCDC_REG0_VLPS_CONFIG_DCDC_HP_SHIFT);
+    }
+    else {
+        /* DCDC to continuous mode */
+        DCDC->REG3 &= ~(DCDC_REG3_DCDC_VDD1P5CTRL_DISABLE_STEP_MASK |
+            DCDC_REG3_DCDC_VDD1P8CTRL_DISABLE_STEP_MASK);
+        bit_clear32(&DCDC->REG0, DCDC_REG0_DCDC_LP_DF_CMP_ENABLE_SHIFT);
+        bit_set32(&DCDC->REG0, DCDC_REG0_VLPS_CONFIG_DCDC_HP_SHIFT);
+    }
 }
 
 int kw41zrf_can_switch_to_idle(kw41zrf_t *dev)
