@@ -294,8 +294,13 @@ static void gnrc_contikimac_send(contikimac_context_t *ctx, bool broadcast)
      * fail to receive the reply because it is still in strobe mode */
     /* We avoid using CSMA on the actual TX operations below because it will add
      * nondeterministic delays to the transmission and mess up the protocol timing */
+    xtimer_set(&ctx->timers.timeout, ctx->channel_check_period + 2 * ctx->params->cca_cycle_period);
     while (gncr_contikimac_channel_energy_detect(ctx)) {
         DEBUG("gnrc_contikimac(%d): wait for TX opportunity\n", thread_getpid());
+        if (ctx->timeout_flag) {
+            LOG_ERROR("gnrc_contikimac(%d): Channel busy\n", thread_getpid());
+            return;
+        }
     }
     thread_flags_clear(CONTIKIMAC_THREAD_FLAG_TICK);
     ctx->timeout_flag = false;
