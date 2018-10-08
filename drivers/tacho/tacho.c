@@ -37,11 +37,9 @@ static void tacho_rotate_buffers(tacho_t *dev)
 }
 
 /* Accumulate pulse count */
-static void tacho_trigger(void *arg)
+static void tacho_trigger(tacho_t *dev, xtimer_ticks32_t now)
 {
-    tacho_t *dev = (tacho_t *)arg;
     tacho_interval_t *ival = &dev->bufs[dev->idx];
-    xtimer_ticks32_t now = xtimer_now();
     if (xtimer_less(dev->min_duration, xtimer_diff(now, ival->time_end))) {
         /* The last pulse came a long time ago, place an empty buffer between */
         /* This will make a pulse buffer of length (now - time_end) with a
@@ -57,9 +55,17 @@ static void tacho_trigger(void *arg)
     }
 }
 
+/* GPIO callback wrapper */
+static void tacho_cb(void *arg)
+{
+    tacho_t *dev = (tacho_t *)arg;
+    xtimer_ticks32_t now = xtimer_now();
+    tacho_trigger(dev, now);
+}
+
 int tacho_init(tacho_t *dev, const tacho_params_t *params)
 {
-    int res = gpio_init_int(params->gpio, params->gpio_mode, params->gpio_flank, tacho_trigger, dev);
+    int res = gpio_init_int(params->gpio, params->gpio_mode, params->gpio_flank, tacho_cb, dev);
     if (res != 0) {
         return res;
     }
@@ -71,10 +77,13 @@ int tacho_init(tacho_t *dev, const tacho_params_t *params)
     return 0;
 }
 
-void tacho_read(const tacho_t *dev, unsigned *count, uint32_t *duration)
+void tacho_read(const tacho_t *dev, unsigned *count, uint32_t *duration, uint32_t *start_time)
 {
+    assert(count);
+    assert(duration);
     unsigned sum_count = 0;
     uint32_t sum_duration = 0;
+    xtimer_ticks32_t start_tick = {0};
     do {
         unsigned idx = dev->idx;
         xtimer_ticks32_t now = xtimer_now();
@@ -82,6 +91,8 @@ void tacho_read(const tacho_t *dev, unsigned *count, uint32_t *duration)
 
         if ((*duration) < xtimer_usec_from_ticks(diff)) {
             /* no pulses detected within the duration */
+            start_tick = dev->bufs[idx].time_end;
+            sum_duration = xtimer_usec_from_ticks(diff);
             break;
         }
         unsigned n = dev->num_bufs;
@@ -93,10 +104,25 @@ void tacho_read(const tacho_t *dev, unsigned *count, uint32_t *duration)
             tacho_interval_t *ival = &dev->bufs[idx];
             sum_count += ival->count;
             sum_duration += xtimer_usec_from_ticks(xtimer_diff(ival->time_end, ival->time_start));
+            start_tick = ival->time_start;
             --n;
             idx = (dev->num_bufs + idx - 1) % dev->num_bufs;
         }
     } while(0);
     *count = sum_count;
     *duration = sum_duration;
+    if (start_time) {
+        *start_time = xtimer_usec_from_ticks(start_tick);
+    }
+}
+
+void tacho_debug_print(const tacho_t *dev)
+{
+    printf("tacho %p, nbufs=%u, idx=%u\n", (void*)dev, dev->num_bufs, dev->idx);
+    for (unsigned k = 0; k < dev->num_bufs; ++k) {
+        printf("  %8" PRIu32 "-%8" PRIu32 ": %3u\n",
+            dev->bufs[k].time_start.ticks32,
+            dev->bufs[k].time_end.ticks32,
+            dev->bufs[k].count);
+    }
 }

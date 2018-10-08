@@ -92,7 +92,7 @@ int tacho_init(tacho_t *dev, const tacho_params_t *params);
  *
  *     uint32_t duration = 100 * US_PER_MS;
  *     unsigned count = 0;
- *     tacho_read(dev, &count, &duration);
+ *     tacho_read(dev, &count, &duration, NULL);
  *     if (duration > 0) {
  *         rpm = ((uint64_t)count * 60000000ul) / duration;
  *     }
@@ -100,11 +100,15 @@ int tacho_init(tacho_t *dev, const tacho_params_t *params);
  *         rpm = 0;
  *     }
  *
+ * If @p start_time is not NULL, then the starting time of the earliest bucket
+ * used will be written to this pointer.
+ *
  * @param[in]       dev         device descriptor of sensor
  * @param[out]      count       pulse count output
  * @param[in, out]  duration    duration for the count, in microseconds
+ * @param[out]      start_time  start time output, may be NULL
  */
-void tacho_read(const tacho_t *dev, unsigned *count, uint32_t *duration);
+void tacho_read(const tacho_t *dev, unsigned *count, uint32_t *duration, uint32_t *start_time);
 
 #ifdef __cplusplus
 }
