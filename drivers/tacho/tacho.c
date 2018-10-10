@@ -44,7 +44,9 @@ static void tacho_trigger(tacho_t *dev, xtimer_ticks32_t now)
         /* The last pulse came a long time ago, place an empty buffer between */
         /* This will make a pulse buffer of length (now - time_end) with a
          * single pulse */
-        tacho_rotate_buffers(dev);
+        if (ival->count > 0) {
+            tacho_rotate_buffers(dev);
+        }
         ival = &dev->bufs[dev->idx];
     }
     ++ival->count;
@@ -120,9 +122,13 @@ void tacho_debug_print(const tacho_t *dev)
 {
     printf("tacho %p, nbufs=%u, idx=%u\n", (void*)dev, dev->num_bufs, dev->idx);
     for (unsigned k = 0; k < dev->num_bufs; ++k) {
-        printf("  %8" PRIu32 "-%8" PRIu32 ": %3u\n",
+        printf("  %8" PRIu32 "-%8" PRIu32 ": %3u",
             dev->bufs[k].time_start.ticks32,
             dev->bufs[k].time_end.ticks32,
             dev->bufs[k].count);
+        if (k == dev->idx) {
+            printf(" <---");
+        }
+        printf("\n");
     }
 }
