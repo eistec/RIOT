@@ -459,7 +459,7 @@ typedef struct {
  */
 typedef struct {
     event_t super;      /**< parent event class */
-    contikimac_t *ctx;  /**< pointer to ContikiMAC context */
+    void *ctx;          /**< pointer to ContikiMAC context */
 } event_contikimac_t;
 
 /**
