@@ -82,8 +82,9 @@ extern "C"
 #define XTIMER_CHAN                 (0)
 /* LPTMR is 16 bits wide and runs at 32768 Hz (clocked by the RTC) */
 #define XTIMER_WIDTH                (16)
-#define XTIMER_BACKOFF              (5)
-#define XTIMER_ISR_BACKOFF          (5)
+/* Very conservative configuration to avoid overflows */
+#define XTIMER_BACKOFF              (12)
+#define XTIMER_ISR_BACKOFF          (12)
 #define XTIMER_OVERHEAD             (4)
 #define XTIMER_HZ                   (32768ul)
 #endif
