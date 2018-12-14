@@ -1012,6 +1012,7 @@ static void contikimac_send(contikimac_t *ctx, int broadcast)
     }
     contikimac_cancel_timers(ctx);
     /* Set timeout for TX strobe */
+    TRACE("+\n");
     contikimac_set_timeout(ctx, tx_strobe_timeout);
     unsigned tx_sequence = 2; /* counts down after the strobe timeout has happened */
     while(tx_sequence) {
@@ -1081,6 +1082,7 @@ static void contikimac_send(contikimac_t *ctx, int broadcast)
     }
     /* Timeout flag was set */
     TRACE("t\n");
+    TRACE("-\n");
     contikimac_cancel_timers(ctx);
     ctx->tx_status = CONTIKIMAC_TX_IDLE;
     return;
