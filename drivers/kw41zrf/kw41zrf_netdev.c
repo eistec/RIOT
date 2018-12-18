@@ -178,7 +178,7 @@ static void kw41zrf_tx_exec(kw41zrf_t *dev)
 static void kw41zrf_wait_idle(kw41zrf_t *dev)
 {
     /* make sure any ongoing T or TR sequence is finished */
-    if (kw41zrf_can_switch_to_idle(dev) == 0) {
+    if (!kw41zrf_can_switch_to_idle(dev)) {
         DEBUG("[kw41zrf] waiting for idle\n");
         num_irqs_handled = num_irqs_queued;
         spinning_for_irq = 1;
@@ -205,10 +205,8 @@ static void kw41zrf_wait_idle(kw41zrf_t *dev)
 int kw41zrf_cca(kw41zrf_t *dev)
 {
     kw41zrf_wait_idle(dev);
-    if (kw41zrf_is_dsm()) {
-        /* bring the device out of DSM */
-        kw41zrf_set_power_mode(dev, KW41ZRF_POWER_IDLE);
-    }
+    /* bring the device out of DSM */
+    kw41zrf_set_power_mode(dev, KW41ZRF_POWER_IDLE);
     kw41zrf_abort_sequence(dev);
     kw41zrf_unmask_irqs();
     LED_RX_ON;
