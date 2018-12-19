@@ -471,6 +471,7 @@ static int contikimac_netdev_send(netdev_t *dev, const iolist_t *iolist)
               thread_getpid(), res);
         return res;
     }
+    ctx->tx_strobe_count = 2 + (ctx->channel_check_period / ((32 * (7 + res)) + (54 * 16)));
     if (ctx->flags & CONTIKIMAC_OPT_TELL_TX_START) {
         ctx->dev.netdev.event_callback(&ctx->dev.netdev, NETDEV_EVENT_TX_STARTED);
     }
@@ -747,6 +748,7 @@ static inline void event_asserts(void *arg)
     assert(arg);
     event_contikimac_t *evp = arg;
     contikimac_t *ctx = evp->ctx;
+    (void) ctx;
     assert(ctx);
     assert(ctx->evq);
 }
@@ -1011,11 +1013,12 @@ static void contikimac_send(contikimac_t *ctx, int broadcast)
         }
     }
     contikimac_cancel_timers(ctx);
+    uint8_t num_tx_frames = 1 + ctx->tx_strobe_count;
     /* Set timeout for TX strobe */
     TRACE("+\n");
     contikimac_set_timeout(ctx, tx_strobe_timeout);
     unsigned tx_sequence = 2; /* counts down after the strobe timeout has happened */
-    while(tx_sequence) {
+    while(tx_sequence && (--num_tx_frames)) {
         if (do_transmit) {
             /* For extra verbose TX timing info: */
             /*

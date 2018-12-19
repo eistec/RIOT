@@ -631,6 +631,10 @@ typedef struct {
      */
     uint8_t tx_status;
     /**
+     * @brief   Upper limit on the number of frames to strobe in one window
+     */
+    uint8_t tx_strobe_count;
+    /**
      * @brief   Emulated netdev state
      *
      * This is used when getting/setting the NETOPT_STATE value.
