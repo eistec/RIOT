@@ -35,10 +35,10 @@ static tacho_t tacho = {
 };
 
 static const tacho_params_t params = {
-    /* FRDM-KW41Z SW3 */
-    .gpio = GPIO_PIN(PORT_C, 4),
+    .gpio = BTN0_PIN,
     .gpio_flank = GPIO_RISING,
     .gpio_mode = GPIO_IN_PU,
+    .debounce_usec = 0,
 };
 
 int main(void)
@@ -56,12 +56,13 @@ int main(void)
         printf("Tacho: ");
         unsigned count = 0;
         uint32_t duration = 3000000ul;
-        tacho_read(&tacho, &count, &duration);
+        uint32_t start_time = 0;
+        tacho_read(&tacho, &count, &duration, &start_time);
         unsigned long rpm = 0;
         if (duration > 0) {
             rpm = ((uint64_t)count * 60000000ul) / duration;
         }
-        printf("%8lu BPM (%8u [count] / %8" PRIu32 " [us])\n", rpm, count, duration);
+        printf("ts: %8" PRIu32 " [us], %8lu BPM (%8u [count] / %8" PRIu32 " [us])\n", start_time, rpm, count, duration);
 
         xtimer_usleep(SLEEP);
     }
