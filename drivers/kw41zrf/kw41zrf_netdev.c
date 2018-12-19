@@ -185,6 +185,8 @@ static void kw41zrf_wait_idle(kw41zrf_t *dev)
         PM_BLOCK(KW41ZRF_PM_BLOCKER);
         while (1) {
             /* TX or CCA in progress */
+            /* Handle the IRQ */
+            kw41zrf_netdev_isr((netdev_t *)dev);
             /* Block until we get an IRQ */
             thread_flags_wait_any(KW41ZRF_THREAD_FLAG_ISR);
             /* Handle the IRQ */
