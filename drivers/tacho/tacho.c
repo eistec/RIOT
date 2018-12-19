@@ -23,6 +23,7 @@
 #include <string.h>
 #include "tacho.h"
 #include "xtimer.h"
+#include "llwu.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
@@ -57,11 +58,22 @@ static void tacho_trigger(tacho_t *dev, xtimer_ticks32_t now)
     }
 }
 
+/* debouncing xtimer callback */
+static void tacho_debounce_cb(void *arg)
+{
+    tacho_t *dev = (tacho_t*)arg;
+    gpio_irq_enable(dev->gpio);
+}
+
 /* GPIO callback wrapper */
 static void tacho_cb(void *arg)
 {
     tacho_t *dev = (tacho_t *)arg;
     xtimer_ticks32_t now = xtimer_now();
+    if (dev->gpio != GPIO_UNDEF) {
+        gpio_irq_disable(dev->gpio);
+        _xtimer_set(&dev->debounce_xt, dev->debounce_timeout.ticks32);
+    }
     tacho_trigger(dev, now);
 }
 
@@ -70,6 +82,20 @@ int tacho_init(tacho_t *dev, const tacho_params_t *params)
     int res = gpio_init_int(params->gpio, params->gpio_mode, params->gpio_flank, tacho_cb, dev);
     if (res != 0) {
         return res;
+    }
+    llwu_wakeup_pin_set(LLWU_WAKEUP_PIN_PTA18, LLWU_WAKEUP_EDGE_RISING, tacho_cb, dev);
+    if (params->debounce_usec > 0) {
+        dev->gpio = params->gpio;
+        dev->debounce_timeout = xtimer_ticks_from_usec(params->debounce_usec);
+        dev->debounce_xt = (const xtimer_t) {
+            .target = 0,
+            .long_target = 0,
+            .callback = tacho_debounce_cb,
+            .arg = dev,
+        };
+    }
+    else {
+        dev->gpio = GPIO_UNDEF;
     }
 
     dev->idx = 0;

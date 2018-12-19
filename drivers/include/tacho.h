@@ -39,6 +39,7 @@ typedef struct {
     gpio_t       gpio;          /**< GPIO pin to use */
     gpio_flank_t gpio_flank;    /**< GPIO flank option */
     gpio_mode_t  gpio_mode;     /**< GPIO pull resistor configuration */
+    uint32_t     debounce_usec; /**< debounce timeout */
 } tacho_params_t;
 
 /**
@@ -56,6 +57,9 @@ typedef struct {
 typedef struct {
     tacho_interval_t *bufs; /**< Circular buffer of measurement intervals */
     xtimer_ticks32_t min_duration; /**< Duration to count before switching buffers */
+    xtimer_ticks32_t debounce_timeout; /**< disable GPIO IRQ for this duration after each pulse */
+    xtimer_t debounce_xt; /**< debounce timer instance */
+    gpio_t gpio; /**< GPIO pin copied from params struct */
     unsigned num_bufs; /**< number of elements in bufs array */
     unsigned idx; /**< current buffer being updated */
 } tacho_t;
