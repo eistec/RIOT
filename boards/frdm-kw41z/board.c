@@ -47,7 +47,7 @@ void board_init(void)
               DCDC_REG3_DCDC_MINPWR_HALF_FETS_PULSED_MASK |
               DCDC_REG3_DCDC_MINPWR_DOUBLE_FETS_MASK |
               DCDC_REG3_DCDC_MINPWR_DOUBLE_FETS_PULSED_MASK)) |
-            DCDC_REG3_DCDC_MINPWR_HALF_FETS_PULSED_MASK;
+            0;
 
         /* Spin until DCDC is stable */
         while (!(DCDC->REG0 & DCDC_REG0_DCDC_STS_DC_OK_MASK)) {}
